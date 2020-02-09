@@ -40,9 +40,16 @@ One of the pins of PORT B is connected directly to CAV.
 
 ![Schematic](/doc/schematic.png)
 
-## SOFTWARE
+## FIRMWARE
 
-Software is written in C language and can be compiled using SDCC / GPUtils. 
+PIC microcontroller firmware is written in C language and can be compiled using [SDCC](http://sdcc.sourceforge.net/) / [GPUtils](https://gputils.sourceforge.io/). 
+
+Output is sent through serial port. A serial terminal or emulator (like Putty) is necessary. The terminal configuration parameters are 9600 8-N-1.
+
+Picture below shows the output of the terminal. The firmware switches Cav (Vpot) to determine whether the device connected is a joystick or a trackball. Then the potentiometer values are shown, followed by the buttons and finally the key pressed on keypad.
+
+![firmware output](/doc/screenCaptureTerminal.png)
+
 
    
 
