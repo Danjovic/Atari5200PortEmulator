@@ -321,7 +321,7 @@ void printResults(void){
   // print buttons
   _puts(" Top:");
   if (RB3==0) _putc('1'); else _putc('0');
-  _puts(" bot:");
+  _puts(" Bot:");
   if (RA5==0) _putc('1'); else _putc('0');
   
   // print Keys
