@@ -27,11 +27,11 @@
 
 //#use delay(clock=8000000)
 //#fuses INTRC_IO, NOPROTECT, NOBROWNOUT, NOWDT, PUT 
-uint16_t __at _CONFIG configWord = _INTRC_OSC_NOCLKOUT & _CPD_OFF &  _CP_OFF & _WDT_OFF & _PWRTE_ON & _MCLRE_OFF; // watchdog off
+uint16_t __at _CONFIG configWord = _INTRC_OSC_NOCLKOUT & _CPD_OFF &  _CP_OFF & _LVP_OFF & _WDT_OFF & _PWRTE_ON & _MCLRE_OFF; // watchdog off
 
 /*
    PIC16F628A
-                  +--___--+                            
+                   +--___--+                            
         VREF/RA2 --|1    18|-- RA1/AN1  POT_Y                   
 ROW0 3       RA3 --|2    17|-- RA0/AN0  POT_X                  
 ROW1 2       RA4 --|3    16|-- RA7 ROW2 1                    
@@ -55,6 +55,21 @@ TOP_BTN      RB3 --|9    10|-- RB4 LINE0 7
 
 #define delay5us()        do { __asm__("nop\n nop\n nop\n nop\n nop"); } while (0)
 
+#define cavOff() do {TRISB0=1; RB0=0;} while (0)  // CAV OFF
+#define cavOn()  do {RB0=1; TRISB0=0;} while (0)  // CAV ON
+
+#define TRISROW0 TRISA3
+#define TRISROW1 TRISA4
+#define TRISROW2 TRISA6
+#define TRISROW3 TRISA7
+
+#define RROW0 RA3
+#define RROW1 RA4
+#define RROW2 RA6
+#define RROW3 RA7
+
+
+
 static uint8_t rows[4];
 static uint8_t hline = 0; // 
 static uint8_t potx=0,poty=0;
@@ -75,8 +90,8 @@ void measurePotentimeters(void);
 void scanKeyboard(void);
 void printResults(void);
 void _puts (char *ptr);
-
-
+void printNumber( uint8_t n);
+void _delayms(uint8_t n);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +105,7 @@ void main (void)
 
 //
 // SETUP
-//  
+//
 
 // Setup comparators
 CMCON = (_CM1 | _CM0); // CM<2:0> = 011  Two Common Reference Comparators
@@ -115,16 +130,16 @@ VR3  VR2  VR1  VR0  VR[3..0] VRR=1    VRR=0
  1    1    0    1       13    3,28     2,71
  1    1    1    0       14    3,44     2,92
  1    1    1    1       15    3,59     3,13  */
-VRCON = _VREN | _VRR | _VR3 | _VR1 | _VR0; // Vref = (11/24) * 5 = 2.29 Volts 
+VRCON = _VREN | _VROE | _VRR | _VR3 | _VR1 | _VR0; // Vref = (11/24) * 5 = 2.29 Volts 
 
 
 // Setup I/O pins
 TRISA = 0xFF;  // All pins as inputs, initially
-TRISB = (uint8_t) ~(_TRISB3);  // Pin RB3 (CAV_CNTRL) as output
+TRISB = (uint8_t) ~(_TRISB0);  // Pin RB0 (CAV_CNTRL) as output
 
 // Turn on Pullups on port B
 NOT_RBPU=0;
-PORTB = (uint8_t) (_RB0 | _RB3 | _RB4 | _RB5 | _RB6 |_RB7 ); 
+PORTB = (uint8_t) (_RB0 |  _RB3 | _RB4 | _RB5 | _RB6 |_RB7 ); 
 
 // Setup Serial Port
 BRGH=1;
@@ -142,14 +157,15 @@ PSA=1;    // prescaler assigned to WDT (timer0 clocked at 1:1)
 TMR0 = 0; // Clear Timer 0
 
 
-
 //
 // Main loop
 //
   for (;;) {  // TODO check RXbuffer for new commands
+
 	scanKeyboard();
 
-    TRISB0=1; RB0=0; // CAV OFF
+    cavOff(); // TRISB0=1; RB0=0; // CAV OFF
+	_delayms(16);
 	measurePotentimeters(); 
 	
 	if ( (potx>220) && (poty>220) ) { // Normal joystick
@@ -158,13 +174,15 @@ TMR0 = 0; // Clear Timer 0
        _puts("[TrackBall]");	   
 	}
 	
-    RB0=1; TRISB0=0; // CAV ON
+    cavOn(); //RB0=1; TRISB0=0; // CAV ON
+	_delayms(16);	
 	measurePotentimeters(); 
 	
 	scanKeyboard();
 	printResults(); 
+	
   } // for  
-} // main
+} // main loop
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,31 +198,20 @@ void measurePotentimeters(void) {
 	TRISA1 = 1;
 	
 
-	// timed loop, trimmed to 64us   7+9+9+34+5 = 64 cycles=> 64us @ 4MHz
+	// timed loop, trimmed to 64us  
 	for (hline=0;hline<228;hline++) {  // 7 cycles
-	  if (C1OUT==0) potx=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
-	  if (C2OUT==0) poty=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
+	  if (C1OUT) potx=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
+	  if (C2OUT) poty=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
 	   
-	  for (j=0;j<4;j++); // 2+8*4 = 34 cycles 
+	  for (j=0;j<3;j++); // 2+8*3 = 26 cycles 
 	  __asm__("nop\n nop\n nop\n nop\n nop"); // 5 cycles
-
 	}
 	
 	// Hold capacitors on discharge
 	TRISA0=0; RA0=0;
-	TRISA1=1; RA1=0;
+	TRISA1=0; RA1=0;
 }
 
-
-#define TRISROW0 TRISA3
-#define TRISROW1 TRISA4
-#define TRISROW2 TRISA6
-#define TRISROW3 TRISA7
-
-#define RROW0 RA3
-#define RROW1 RA4
-#define RROW2 RA6
-#define RROW3 RA7
 
 
 void scanKeyboard(void) {
@@ -270,33 +277,31 @@ void _putc (uint8_t c) {
 void _puts (char *ptr) {
   while (*ptr) {
     _putc (*ptr);
+	if (*ptr == '\n') _putc('\r');
 	ptr++;
   }
 }
-
-
-
 
 
 void printNumber( uint8_t n) {
    uint8_t digit;
    
    digit='0';
-   while (n>100) {
+   while (n>=100) {
      digit++;
 	 n=n-100;
    }
    _putc(digit);
    
    digit='0';
-   while (n>10) {
+   while (n>=10) {
      digit++;
 	 n=n-10;
    }
    _putc(digit);
    
     digit='0';
-   while (n>1) {
+   while (n>=1) {
      digit++;
 	 n=n-1;
    }
@@ -319,28 +324,34 @@ void printResults(void){
   
   // print Keys
   _puts(" Keys:");
-  if (rows[1] & (1<<3)) _putc('0');
-  if (rows[0] & (1<<0)) _putc('1');
-  if (rows[1] & (1<<0)) _putc('2');
-  if (rows[2] & (1<<0)) _putc('3');
-  if (rows[0] & (1<<1)) _putc('4');
-  if (rows[1] & (1<<1)) _putc('5');
-  if (rows[2] & (1<<1)) _putc('6');
-  if (rows[0] & (1<<2)) _putc('7');
-  if (rows[1] & (1<<2)) _putc('8');
-  if (rows[2] & (1<<2)) _putc('9');
-  if (rows[0] & (1<<3)) _putc('*');
-  if (rows[2] & (1<<3)) _putc('#');
+  if ((rows[1] & (1<<3))==0) _putc('0');
+  if ((rows[0] & (1<<0))==0) _putc('1');
+  if ((rows[1] & (1<<0))==0) _putc('2');
+  if ((rows[2] & (1<<0))==0) _putc('3');
+  if ((rows[0] & (1<<1))==0) _putc('4');
+  if ((rows[1] & (1<<1))==0) _putc('5');
+  if ((rows[2] & (1<<1))==0) _putc('6');
+  if ((rows[0] & (1<<2))==0) _putc('7');
+  if ((rows[1] & (1<<2))==0) _putc('8');
+  if ((rows[2] & (1<<2))==0) _putc('9');
+  if ((rows[0] & (1<<3))==0) _putc('*');
+  if ((rows[2] & (1<<3))==0) _putc('#');
 
-  if (rows[3] & (1<<2)) _putc('R');
-  if (rows[3] & (1<<1)) _putc('P');
-  if (rows[3] & (1<<0)) _putc('S');
+  if ((rows[3] & (1<<2))==0) _putc('R');
+  if ((rows[3] & (1<<1))==0) _putc('P');
+  if ((rows[3] & (1<<0))==0) _putc('S');
 
   _puts("\n");  
-	
-
 }
 
 
-
-
+void _delayms(uint8_t n) {
+uint8_t j;
+ do {                     // total of = (10+10*j) *n  
+//    __asm__("nop\n");
+    j=99;
+    do { 
+       __asm__("nop\n nop\n"); 
+    } while (--j);
+ } while (--n);
+}
