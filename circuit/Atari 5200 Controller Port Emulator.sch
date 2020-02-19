@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.2.0">
+<eagle version="7.3.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -7734,30 +7734,30 @@ W = angled&lt;p&gt;
 <label x="78.74" y="76.2" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="RX-IN" class="0">
+<net name="RXI" class="0">
 <segment>
-<pinref part="IC1" gate="G$1" pin="RB1/RX/DT"/>
-<wire x1="76.2" y1="83.82" x2="88.9" y2="83.82" width="0.1524" layer="91"/>
-<wire x1="88.9" y1="83.82" x2="88.9" y2="40.64" width="0.1524" layer="91"/>
-<wire x1="88.9" y1="40.64" x2="25.4" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="76.2" y1="86.36" x2="91.44" y2="86.36" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="86.36" x2="91.44" y2="40.64" width="0.1524" layer="91"/>
+<wire x1="91.44" y1="40.64" x2="25.4" y2="40.64" width="0.1524" layer="91"/>
 <wire x1="25.4" y1="40.64" x2="25.4" y2="81.28" width="0.1524" layer="91"/>
 <wire x1="25.4" y1="81.28" x2="17.78" y2="81.28" width="0.1524" layer="91"/>
-<label x="78.74" y="83.82" size="1.778" layer="95"/>
+<label x="78.74" y="86.36" size="1.778" layer="95"/>
 <pinref part="SV1" gate="1" pin="4"/>
 <label x="20.32" y="81.28" size="1.778" layer="95"/>
+<pinref part="IC1" gate="G$1" pin="RB2/TX/CK"/>
 </segment>
 </net>
-<net name="TX-OUT" class="0">
+<net name="TXD" class="0">
 <segment>
-<pinref part="IC1" gate="G$1" pin="RB2/TX/CK"/>
-<wire x1="76.2" y1="86.36" x2="91.44" y2="86.36" width="0.1524" layer="91"/>
-<wire x1="91.44" y1="86.36" x2="91.44" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="91.44" y1="38.1" x2="27.94" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="27.94" y1="38.1" x2="27.94" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="76.2" y1="83.82" x2="88.9" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="88.9" y1="83.82" x2="88.9" y2="43.18" width="0.1524" layer="91"/>
+<wire x1="88.9" y1="43.18" x2="27.94" y2="43.18" width="0.1524" layer="91"/>
+<wire x1="27.94" y1="43.18" x2="27.94" y2="83.82" width="0.1524" layer="91"/>
 <wire x1="27.94" y1="83.82" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
-<label x="78.74" y="86.36" size="1.778" layer="95"/>
+<label x="78.74" y="83.82" size="1.778" layer="95"/>
 <pinref part="SV1" gate="1" pin="3"/>
 <label x="20.32" y="83.82" size="1.778" layer="95"/>
+<pinref part="IC1" gate="G$1" pin="RB1/RX/DT"/>
 </segment>
 </net>
 <net name="TOP/VPP" class="0">
