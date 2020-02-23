@@ -7760,7 +7760,7 @@ W = angled&lt;p&gt;
 <label x="20.32" y="83.82" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="TOP/VPP" class="0">
+<net name="BOT/VPP" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="RA5/MCLR/VPP"/>
 <wire x1="76.2" y1="71.12" x2="96.52" y2="71.12" width="0.1524" layer="91"/>
@@ -7796,7 +7796,7 @@ W = angled&lt;p&gt;
 <label x="147.32" y="93.98" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="BOTTOM" class="0">
+<net name="TOP" class="0">
 <segment>
 <pinref part="IC1" gate="G$1" pin="RB3/CCP1"/>
 <wire x1="76.2" y1="88.9" x2="101.6" y2="88.9" width="0.1524" layer="91"/>
