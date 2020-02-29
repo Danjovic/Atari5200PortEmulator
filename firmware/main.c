@@ -5,8 +5,24 @@
    Daniel Jose Viana, Janeiro de 2020 - danjovic@hotmail.com
    
    Basic Release: 09 February 2020
+   
+   Version 1.0 - 29 February 2020
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                                         ///
 ///                                       LIBRARIES                                                         ///
@@ -34,15 +50,15 @@ uint16_t __at _CONFIG configWord = _INTRC_OSC_NOCLKOUT & _CPD_OFF &  _CP_OFF & _
 /*
    PIC16F628A
                    +--___--+                            
-        VREF/RA2 --|1    18|-- RA1/AN1  POT_Y                   
-ROW0 3       RA3 --|2    17|-- RA0/AN0  POT_X                  
-ROW1 2       RA4 --|3    16|-- RA7 ROW2 1                    
-BOT_BTN MCLR/RA5 --|4    15|-- RA6 ROW3 4                      
+        VREF/RA2 --|1    18|-- RA1/AN1  POT_X                   
+PIN1 ROW2    RA3 --|2    17|-- RA0/AN0  POT_Y                  
+PIN2 ROW1    RA4 --|3    16|-- RA7 ROW3 PIN4                   
+BOT_BTN MCLR/RA5 --|4    15|-- RA6 ROW0 PIN3                    
              GND --|5    14|-- VCC                            
-CAV_CNTRL    RB0 --|6    13|-- RB7 LINE3 8                     
-    RXD   RX/RB1 --|7    12|-- RB6 LINE2 5       
-    TXD   TX/RB2 --|8    11|-- RB5 LINE1 6
-TOP_BTN      RB3 --|9    10|-- RB4 LINE0 7
+CAV_CNTRL    RB0 --|6    13|-- RB7 LINE3 PIN8                     
+    RXD   RX/RB1 --|7    12|-- RB6 LINE0 PIN7       
+    TXD   TX/RB2 --|8    11|-- RB5 LINE1 PIN6
+TOP_BTN      RB3 --|9    10|-- RB4 LINE2 PIN5
                    +-------+  
 */
 
@@ -60,16 +76,24 @@ TOP_BTN      RB3 --|9    10|-- RB4 LINE0 7
 #define cavOff() do {TRISB0=1; RB0=0;} while (0)  // CAV OFF
 #define cavOn()  do {RB0=1; TRISB0=0;} while (0)  // CAV ON
 
-#define TRISROW0 TRISA3
-#define TRISROW1 TRISA4
-#define TRISROW2 TRISA6
-#define TRISROW3 TRISA7
+#define TRISLIN0 TRISA6
+#define TRISLIN1 TRISA4
+#define TRISLIN2 TRISA3
+#define TRISLIN3 TRISA7
 
-#define RROW0 RA3
-#define RROW1 RA4
-#define RROW2 RA6
-#define RROW3 RA7
+#define RLIN0 RA6
+#define RLIN1 RA4
+#define RLIN2 RA3
+#define RLIN3 RA7
 
+
+
+//                - - - - 3 2 1 0 Bit position
+// rows[] format  0 0 0 0 3 0 1 2 matrix bit
+#define COL0 2 // bit 2
+#define COL1 1 // bit 1
+#define COL2 0 // bit 0
+#define COL3 3 // bit 3
 
 
 static uint8_t rows[4];
@@ -202,8 +226,8 @@ void measurePotentimeters(void) {
 
 	// timed loop, trimmed to 64us  
 	for (hline=0;hline<228;hline++) {  // 7 cycles
-	  if (C1OUT) potx=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
-	  if (C2OUT) poty=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
+	  if (C1OUT) poty=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
+	  if (C2OUT) potx=hline; else __asm__("nop\n nop\n nop\n nop\n nop"); // 9 cycles
 	   
 	  for (j=0;j<3;j++); // 2+8*3 = 26 cycles 
 	  __asm__("nop\n nop\n nop\n nop\n nop"); // 5 cycles
@@ -218,18 +242,22 @@ void measurePotentimeters(void) {
 
 void scanKeyboard(void) {
 	uint8_t j;
-	
+      
+     
+	 
 //    8  5  6  7
-//	3 *  7  4  1  row0
-//	2 0  8  5  2  row1
-//	1 #  9  6  3  row2
-//	4    R  P  S  r0w3
+//	3 *  7  4  1  LIN0
+//	2 0  8  5  2  LIN1
+//	1 #  9  6  3  LIN2
+//	4    R  P  S  LIN3
+
+//    3  2  1  0  <- COL
 	
 	// Each row remains active by two horizontal lines (128us)
 	
 	// Select first line  4+4+50+4+23+42+1 = 128 cycles
-	TRISROW3 = 1; RROW3 = 1;          // 4 cycles
-	TRISROW0 = 0; RROW0 = 0;          // 4 cycles
+	TRISLIN3 = 1; RLIN3 = 1;          // 4 cycles
+	TRISLIN0 = 0; RLIN0 = 0;          // 4 cycles
 	for (j=0;j<6;j++);               // 2+8*6 = 50 cycles	
 	__asm__("nop\n nop\n nop\n nop"); // 4 cycles
 	rows[0] = (PORTB & 0xF0)>>4;     // 23 cycles
@@ -238,8 +266,8 @@ void scanKeyboard(void) {
 	
 	
 	// Select 2nd line  4+4+50+4+23+42+1 = 128 cycles
-	TRISROW0 = 1; RROW0 = 1;          // 4 cycles
-	TRISROW1 = 0; RROW1 = 0;          // 4 cycles
+	TRISLIN0 = 1; RLIN0 = 1;          // 4 cycles
+	TRISLIN1 = 0; RLIN1 = 0;          // 4 cycles
 	for (j=0;j<6;j++);               // 2+8*6 = 50 cycles	
 	__asm__("nop\n nop\n nop\n nop"); // 4 cycles
 	rows[1] = (PORTB & 0xF0)>>4;     // 23 cycles
@@ -249,8 +277,8 @@ void scanKeyboard(void) {
 	
 
 	// Select third line  4+4+50+4+23+42+1 = 128 cycles
-	TRISROW1 = 1; RROW1 = 1;          // 4 cycles
-	TRISROW2 = 0; RROW2 = 0;          // 4 cycles
+	TRISLIN1 = 1; RLIN1 = 1;          // 4 cycles
+	TRISLIN2 = 0; RLIN2 = 0;          // 4 cycles
 	for (j=0;j<6;j++);               // 2+8*6 = 50 cycles	
 	__asm__("nop\n nop\n nop\n nop"); // 4 cycles
 	rows[2] = (PORTB & 0xF0)>>4;     // 23 cycles
@@ -258,8 +286,8 @@ void scanKeyboard(void) {
 	__asm__("nop");                   // 1 cycle
 	
 	// Select fourth line  4+4+50+4+23+42+1 = 128 cycles
-	TRISROW2 = 1; RROW2 = 1;          // 4 cycles
-	TRISROW3 = 0; RROW3 = 0;          // 4 cycles
+	TRISLIN2 = 1; RLIN2 = 1;          // 4 cycles
+	TRISLIN3 = 0; RLIN3 = 0;          // 4 cycles
 	for (j=0;j<6;j++);               // 2+8*6 = 50 cycles	
 	__asm__("nop\n nop\n nop\n nop"); // 4 cycles
 	rows[3] = (PORTB & 0xF0)>>4;     // 23 cycles
@@ -311,6 +339,16 @@ void printNumber( uint8_t n) {
 }
 
 
+/*
+        | 3 | 2 | 1 |   4   | pin
+Pin row | 0 | 1 | 2 |   3   | COL
+--------+---+---+---+-------+
+ 7    0 | 1 | 2 | 3 | Start |
+ 6    1 | 4 | 5 | 6 | Pause |
+ 5    2 | 7 | 8 | 9 | Reset |
+ 8    3 | * | 0 | # |  None |
+
+*/
 void printResults(void){
   // print axes information
   _puts("PotX:");
@@ -326,22 +364,25 @@ void printResults(void){
   
   // print Keys
   _puts(" Keys:");
-  if ((rows[1] & (1<<3))==0) _putc('0');
-  if ((rows[0] & (1<<0))==0) _putc('1');
-  if ((rows[1] & (1<<0))==0) _putc('2');
-  if ((rows[2] & (1<<0))==0) _putc('3');
-  if ((rows[0] & (1<<1))==0) _putc('4');
-  if ((rows[1] & (1<<1))==0) _putc('5');
-  if ((rows[2] & (1<<1))==0) _putc('6');
-  if ((rows[0] & (1<<2))==0) _putc('7');
-  if ((rows[1] & (1<<2))==0) _putc('8');
-  if ((rows[2] & (1<<2))==0) _putc('9');
-  if ((rows[0] & (1<<3))==0) _putc('*');
-  if ((rows[2] & (1<<3))==0) _putc('#');
+  //                7 6 5 4 3 2 1 0 Bit
+  // rows[] format  0 0 0 0 3 0 1 2 matrix bit
+  
+  if ((rows[2] & (1<<COL3))==0) _putc('#');
+  if ((rows[2] & (1<<COL0))==0) _putc('3');
+  if ((rows[2] & (1<<COL1))==0) _putc('6');
+  if ((rows[2] & (1<<COL2))==0) _putc('9');
+  if ((rows[1] & (1<<COL3))==0) _putc('0');
+  if ((rows[1] & (1<<COL0))==0) _putc('2');
+  if ((rows[1] & (1<<COL1))==0) _putc('5');
+  if ((rows[1] & (1<<COL2))==0) _putc('8');
+  if ((rows[0] & (1<<COL3))==0) _putc('*');
+  if ((rows[0] & (1<<COL0))==0) _putc('1');
+  if ((rows[0] & (1<<COL1))==0) _putc('4');  
+  if ((rows[0] & (1<<COL2))==0) _putc('7');
 
-  if ((rows[3] & (1<<2))==0) _putc('R');
-  if ((rows[3] & (1<<1))==0) _putc('P');
-  if ((rows[3] & (1<<0))==0) _putc('S');
+  if ((rows[3] & (1<<COL0))==0) _putc('S');
+  if ((rows[3] & (1<<COL1))==0) _putc('P');
+  if ((rows[3] & (1<<COL2))==0) _putc('R');
 
   _puts("\n");  
 }
