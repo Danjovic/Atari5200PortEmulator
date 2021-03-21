@@ -7,6 +7,7 @@
    Basic Release: 09 February 2020
    
    Version 1.0 - 29 February 2020
+   Version 1.1 - 15 March 2021    - Trackball/Joystick detection more acurate
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,13 +96,11 @@ TOP_BTN      RB3 --|9    10|-- RB4 LINE2 PIN5
 #define COL2 0 // bit 0
 #define COL3 3 // bit 3
 
-
 static uint8_t rows[4];
 static uint8_t hline = 0; // 
 static uint8_t potx=0,poty=0;
+uint8_t frameCounter; 
  
- 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///                                                                                                         ///
 ///                                        FUNCTION PROTOTYPES                                              ///
@@ -186,14 +185,12 @@ TMR0 = 0; // Clear Timer 0
 //
 // Main loop
 //
+
   for (;;) {  // TODO check RXbuffer for new commands
-
-	scanKeyboard();
-
     cavOff(); // TRISB0=1; RB0=0; // CAV OFF
-	_delayms(16);
-	measurePotentimeters(); 
-	
+	measurePotentimeters(); _delayms(2); // complete roughly 1 frame 
+	measurePotentimeters(); _delayms(2); // do it again
+    
 	if ( (potx>220) && (poty>220) ) { // Normal joystick
        _puts("[Joystick]");	   	
 	} else { // trackball connected
@@ -201,11 +198,13 @@ TMR0 = 0; // Clear Timer 0
 	}
 	
     cavOn(); //RB0=1; TRISB0=0; // CAV ON
-	_delayms(16);	
-	measurePotentimeters(); 
-	
-	scanKeyboard();
-	printResults(); 
+    
+    for (frameCounter = 4 ; frameCounter > 0 ; frameCounter--) {
+        measurePotentimeters(); 
+        _delayms(1); 
+        scanKeyboard(); // complete roughly 1 frame 
+    }
+	printResults(); // roughtly 10 times per second
 	
   } // for  
 } // main loop
